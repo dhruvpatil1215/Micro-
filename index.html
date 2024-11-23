@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graphical Attendance System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(45deg, #00cc99, #00b3e6);
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            max-width: 600px;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #2980b9;
+        }
+        .input-group {
+            position: relative;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #2980b9;
+        }
+        .input-group i {
+            position: absolute;
+            top: 69%;
+            left: 10px;
+            transform: translateY(-50%);
+            color: #2980b9;
+            font-size: 19px;
+        }
+        .input-group select,
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px 12px 35px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.3s ease;
+            font-size: 16px;
+        }
+        .input-group select:focus,
+        .input-group input:focus {
+            border-color: #6dd5fa;
+        }
+        #rollNumber {
+            width: 80%;
+            padding: 12px 15px 12px 35px;
+        }
+        .button {
+            width: 100%;
+            padding: 12px;
+            background: #2980b9;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s ease;
+        }
+        .button:hover {
+            background: #1a76c2;
+        }
+        .status {
+            font-size: 16px;
+            margin-top: 20px;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        #batchSection {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Attendance System</h1>
+        <div class="input-group">
+            <label for="sessionType">Session Type</label>
+            <i class="fas fa-chalkboard-teacher"></i>
+            <select id="sessionType">
+                <option value="lecture">Lecture</option>
+                <option value="practical">Practical</option>
+            </select>
+        </div>
+        <div class="input-group" id="batchSection">
+            <label for="batch">Batch</label>
+            <i class="fas fa-users"></i>
+            <select id="batch">
+                <option value="A">Batch A</option>
+                <option value="B">Batch B</option>
+                <option value="C">Batch C</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="rollNumber">Roll Number</label>
+            <i class="fas fa-id-badge"></i>
+            <input type="text" id="rollNumber" placeholder="Enter Roll Number" />
+        </div>
+        <button class="button" id="markAttendance">Mark Attendance</button>
+        <div id="status" class="status"></div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const sessionTypeSelect = document.getElementById('sessionType');
+            const batchSection = document.getElementById('batchSection');
+            const batchSelect = document.getElementById('batch');
+            const rollNumberInput = document.getElementById('rollNumber');
+            const markAttendanceButton = document.getElementById('markAttendance');
+            const statusDiv = document.getElementById('status');
+
+            sessionTypeSelect.addEventListener('change', function () {
+                batchSection.style.display = sessionTypeSelect.value === 'practical' ? 'block' : 'none';
+            });
+
+            markAttendanceButton.addEventListener('click', function () {
+                const rollNumber = parseInt(rollNumberInput.value.trim(), 10);
+                const batch = batchSelect.value;
+                const sessionType = sessionTypeSelect.value;
+
+                if (!rollNumber) {
+                    statusDiv.textContent = "Please enter your roll number.";
+                    return;
+                }
+
+                if (sessionType === 'practical' && !isRollNumberValidForBatch(rollNumber, batch)) {
+                    statusDiv.textContent = `Invalid roll number for Batch ${batch}.`;
+                    return;
+                }
+
+                checkLocationAndMarkAttendance(rollNumber);
+            });
+
+            function isRollNumberValidForBatch(rollNumber, batch) {
+                switch (batch) {
+                    case 'A': return rollNumber >= 1901 && rollNumber <= 1926;
+                    case 'B': return rollNumber >= 1927 && rollNumber <= 1950;
+                    case 'C': return rollNumber >= 1951 && rollNumber <= 1975;
+                    default: return false;
+                }
+            }
+
+            function checkLocationAndMarkAttendance(rollNumber) {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function(position) {
+                        const userLatitude = position.coords.latitude;
+                        const userLongitude = position.coords.longitude;
+
+                        const allowedLatitudes = [28.7041, 28.6500];  // Your allowed latitudes range
+                        const allowedLongitudes = [77.1025, 77.1500];  // Your allowed longitudes range
+
+                        if (userLatitude >= allowedLatitudes[0] && userLatitude <= allowedLatitudes[1] && 
+                            userLongitude >= allowedLongitudes[0] && userLongitude <= allowedLongitudes[1]) {
+                            statusDiv.textContent = `Attendance marked for Roll No: ${rollNumberInput.value}`;
+                        } else {
+                            statusDiv.textContent = "Your location is outside the allowed range for marking attendance.";
+                        }
+                    }, function(error) {
+                        statusDiv.textContent = "Location access denied or unavailable.";
+                    });
+                } else {
+                    statusDiv.textContent = "Geolocation is not supported by this browser.";
+                }
+            }
+        });
+    </script>
+</body>
+</html>
